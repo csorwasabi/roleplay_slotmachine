@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Role-play Slot Machine — Business English</title>
+<style>
+  :root{--bg:#071028;--card:#0b1220;--accent:#06b6d4;--muted:#9fb4c5}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;background:var(--bg);color:#e6eef6}
+  .container{max-width:960px;margin:36px auto;padding:22px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);box-shadow:0 10px 40px rgba(2,6,23,0.6)}
+  h1{margin:0 0 10px;font-size:20px}
+  .meta{font-size:13px;color:var(--muted);margin-bottom:12px}
+  .slot-wrap{display:flex;gap:18px;align-items:center}
+  .machine{display:flex;gap:14px;background:transparent}
+  .reel{width:220px;height:120px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:8px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+  .window{width:100%;height:100%;position:relative;overflow:hidden;border-radius:8px;mask-image:linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);-webkit-mask-image:linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);}
+  .strip{display:flex;flex-direction:column;align-items:center;will-change:transform}
+  .cell{height:40px;min-height:40px;display:flex;align-items:center;justify-content:center;padding:0 8px;font-weight:700;text-align:center}
+  .highlight{position:absolute;left:8px;right:8px;top:50%;height:40px;margin-top:-20px;pointer-events:none;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.03)}
+  .controls{display:flex;flex-direction:column;gap:10px;margin-left:12px}
+  #spinButton{background:linear-gradient(90deg,var(--accent),#8b5cf6);border:0;padding:12px 18px;border-radius:10px;color:#021220;font-weight:800;cursor:pointer}
+  .muter{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;color:#cfeaf6;cursor:pointer}
+  .footer{margin-top:14px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+  @media (max-width:880px){.slot-wrap{flex-direction:column}.controls{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Business English Role‑play Slot Machine</h1>
+  <div class="meta">Click <strong>SPIN</strong> — the reels will spin downwards and stop one-by-one like a real slot machine. Each reel displays only the final rolled item in the centre window. You can spin as many times as you like.</div>
+
+  <div class="slot-wrap">
+    <div class="machine" id="machine">
+      <div class="reel" data-id="who"><div class="window"><div class="strip" id="strip-who"></div><div class="highlight"></div></div></div>
+      <div class="reel" data-id="where"><div class="window"><div class="strip" id="strip-where"></div><div class="highlight"></div></div></div>
+      <div class="reel" data-id="talk"><div class="window"><div class="strip" id="strip-talk"></div><div class="highlight"></div></div></div>
+      <div class="reel" data-id="problem"><div class="window"><div class="strip" id="strip-problem"></div><div class="highlight"></div></div></div>
+    </div>
+
+    <div class="controls">
+      <button id="spinButton">SPIN</button>
+      <button id="mute" class="muter">🔊 Sound</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>Designed for classroom role-play</div>
+    <div id="lastResult" class="meta">— ready —</div>
+  </div>
+</div>
+
+<script>
+/* === data: full 20 items per category === */
+const whoYouAre = [
+  'Project manager at a tech company','Junior marketing specialist','HR coordinator','Customer support representative','Regional sales manager','Financial analyst','Procurement officer','Logistics coordinator','Software developer','Team leader of a small remote team','Intern on your first week','Product owner','Business development associate','Quality assurance specialist','Training and development officer','Receptionist/office assistant','Country director visiting another branch','Short-term consultant','Data analyst','Customer success manager'
+];
+const whereYouAre = [
+  'Conference room right before a meeting','Open-plan office full of people','Quiet hallway between departments','Client\'s office during a site visit','Busy café near the company building','At the airport waiting for your flight','Company kitchen during a coffee break','Trade fair booth','In a taxi on the way to an important appointment','On a video call with unreliable internet','In the warehouse during inventory','Hotel lobby before a conference','On the factory floor','In the server room','At a coworking space','In a training room preparing materials','At reception greeting visitors','In a boardroom during a high-pressure negotiation','In the parking lot just before leaving','At your desk minutes before a deadline'
+];
+const whoYouTalkTo = [
+  'Your direct manager','A colleague from another department','A new client you\'ve never met','A long-term customer','A frustrated teammate','A senior executive','A supplier representative','A potential investor','A colleague from a different country','A trainee who needs guidance','A receptionist who can\'t give you the info you need','A vendor trying to upsell you','An auditor checking compliance','A technician who doesn\'t speak much English','A competitor you accidentally meet at an event','A job candidate for an interview','A partner company\'s project lead','A freelance designer you hired','A mentor from a leadership program','A security guard with strict rules'
+];
+const problems = [
+  'A delivery didn\'t arrive on time','The meeting agenda suddenly changed','You realised there\'s a mistake in the report','Your client wants a discount you can\'t approve','Your flight is delayed, and you\'ll miss the meeting','The software you need has crashed','You forgot to bring an important document','There\'s a misunderstanding about responsibilities','Your colleague is blocking your progress','A customer is unhappy with the service','The budget was cut at the last minute','You received unclear instructions','The team is overworked and stressed','A supplier is charging more than expected','The client wants results faster than possible','You don\'t understand the technical explanation','Someone double-booked a meeting room','There\'s a miscommunication due to cultural differences','You suspect your coworker made an error but aren\'t sure','You need to say no without damaging the relationship'
+];
+
+/* === DOM references === */
+const strips = {
+  who: document.getElementById('strip-who'),
+  where: document.getElementById('strip-where'),
+  talk: document.getElementById('strip-talk'),
+  problem: document.getElementById('strip-problem')
+};
+const spinBtn = document.getElementById('spinButton');
+const lastResult = document.getElementById('lastResult');
+let muted = false;
+
+/* === prepare strips: repeat items so we can spin seamlessly === */
+function populateStrip(stripEl, items){
+  stripEl.innerHTML = '';
+  // repeat items several times to allow long spin
+  const reps = 8;
+  for(let r=0;r<reps;r++){
+    items.forEach(text=>{
+      const cell = document.createElement('div'); cell.className='cell'; cell.textContent = text; stripEl.appendChild(cell);
+    });
+  }
+  // add one final copy of the original items for clean landing
+  items.forEach(text=>{ const cell=document.createElement('div'); cell.className='cell'; cell.textContent=text; stripEl.appendChild(cell); });
+}
+
+populateStrip(strips.who, whoYouAre);
+populateStrip(strips.where, whereYouAre);
+populateStrip(strips.talk, whoYouTalkTo);
+populateStrip(strips.problem, problems);
+
+/* === sound === */
+let audioCtx=null; function ensureAudio(){ if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){audioCtx=null}} }
+function tickSound(){ if(muted) return; ensureAudio(); if(!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=900; g.gain.setValueAtTime(0.0001,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.08,audioCtx.currentTime+0.001); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.06); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.08); }
+function stopSound(){ if(muted) return; ensureAudio(); if(!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value=1200; g.gain.setValueAtTime(0.0001,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.12,audioCtx.currentTime+0.001); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.25); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.26); }
+
+/* === random pick using crypto === */
+function pick(array){ if(window.crypto && window.crypto.getRandomValues){ const r=new Uint32Array(1); window.crypto.getRandomValues(r); return r[0] % array.length; } return Math.floor(Math.random()*array.length); }
+
+/* === easing === */
+function easeOutCubic(t){ return 1 - Math.pow(1-t,3); }
+
+/* === spin animation (downwards) === */
+async function spinSingle(stripEl, items, duration, finalIndex, delayStart=0){
+  // cell height
+  const cell = stripEl.querySelector('.cell');
+  const h = cell ? cell.offsetHeight : 40;
+  // total items currently in strip
+  const totalCells = stripEl.children.length;
+
+  // We want to spin downwards: increase translateY (positive) so strip moves up visually,
+  // but easier to compute negative translateY to move strip upward so items appear to move down in window.
+
+  // start position: keep current transform if any
+  const style = stripEl.style;
+  const from = parseFloat(style.getPropertyValue('--ty') || '0');
+
+  // choose a landing cell index inside the strip such that the chosen item (finalIndex) appears in the center.
+  // place landing copy near the end to allow long spin: pick base copy index = (reps-1)*items.length + finalIndex
+  const reps = 8;
+  const landingIndex = (reps-1) * items.length + finalIndex;
+
+  // compute from and to in px (transform translateY)
+  // current visible center corresponds to offset where the center cell is at the window center: we assume starting transform already aligns to some cell; to keep simple, animate from 0.
+  const to = - landingIndex * h + (stripEl.parentElement.offsetHeight/2 - h/2);
+  const start = 0 + (Math.random()* -200 - 100); // give starting jitter so spin looks natural
+
+  return new Promise(resolve=>{
+    let startTime = null;
+    function step(ts){
+      if(!startTime) startTime = ts;
+      const elapsed = ts - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(t);
+      const current = start + (to - start) * eased;
+      stripEl.style.transform = `translateY(${current}px)`;
+
+      // produce tick sound occasionally (based on progress)
+      if(Math.floor(elapsed / 80) !== Math.floor((elapsed - 16) / 80)) tickSound();
+
+      if(elapsed < duration){
+        requestAnimationFrame(step);
+      } else {
+        // ensure final
+        stripEl.style.transform = `translateY(${to}px)`;
+        stopSound();
+        resolve();
+      }
+    }
+    setTimeout(()=>requestAnimationFrame(step), delayStart);
+  });
+}
+
+spinBtn.addEventListener('click', async ()=>{
+  // pick random final indices for each reel
+  const idx0 = pick(whoYouAre);
+  const idx1 = pick(whereYouAre);
+  const idx2 = pick(whoYouTalkTo);
+  const idx3 = pick(problems);
+
+  // durations (ms) and staggered delays
+  const baseDur = 1400;
+  const results = [];
+
+  // disable button during spin
+  spinBtn.disabled = true;
+  spinBtn.textContent = 'SPINNING...';
+
+  await spinSingle(strips.who, whoYouAre, baseDur + 200, idx0, 0);
+  await spinSingle(strips.where, whereYouAre, baseDur + 360, idx1, 120);
+  await spinSingle(strips.talk, whoYouTalkTo, baseDur + 560, idx2, 240);
+  await spinSingle(strips.problem, problems, baseDur + 760, idx3, 360);
+
+  // compute final visible text from center cell of each strip
+  function centerText(stripEl){
+    const h = stripEl.querySelector('.cell').offsetHeight;
+    const boxTop = stripEl.parentElement.getBoundingClientRect().top;
+    const centerY = stripEl.parentElement.getBoundingClientRect().top + stripEl.parentElement.offsetHeight/2;
+    // find child whose center is closest to centerY
+    let chosen=''; let best=1e9;
+    Array.from(stripEl.children).forEach(ch=>{ const r=ch.getBoundingClientRect(); const c = r.top + r.height/2; const d = Math.abs(c - centerY); if(d<best){best=d; chosen=ch.textContent}});
+    return chosen;
+  }
+
+  const finalTexts = [centerText(strips.who), centerText(strips.where), centerText(strips.talk), centerText(strips.problem)];
+  lastResult.textContent = `${finalTexts[0]} — ${finalTexts[1]} — talking to ${finalTexts[2]} — Problem: ${finalTexts[3]}`;
+
+  spinBtn.disabled = false;
+  spinBtn.textContent = 'SPIN';
+});
+
+// mute toggle
+document.getElementById('mute').addEventListener('click', ()=>{ muted = !muted; document.getElementById('mute').textContent = muted? '🔇 Muted' : '🔊 Sound'; });
+
+// ensure strips start aligned so a central cell is shown
+window.addEventListener('load', ()=>{
+  // center first real copy for each strip
+  const h = strips.who.querySelector('.cell').offsetHeight;
+  const startIndex = 2 * whoYouAre.length; // point somewhere in middle
+  Object.values(strips).forEach((strip)=>{
+    const to = - startIndex * h + (strip.parentElement.offsetHeight/2 - h/2);
+    strip.style.transform = `translateY(${to}px)`;
+  });
+});
+</script>
+</body>
+</html>
